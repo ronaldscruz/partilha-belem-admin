@@ -1,0 +1,59 @@
+name: Publicação e disponibilidade
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '17,47 * * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build -- --base-href /partilha-belem-admin/
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist/partilha-belem-admin/browser
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+    steps:
+      - id: publish
+        uses: actions/deploy-pages@v4
+
+  availability:
+    name: Disponibilidade do MVP
+    needs: deploy
+    if: always() && (github.event_name == 'schedule' || needs.deploy.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar a página pública
+        env:
+          SITE_URL: https://ronaldscruz.github.io/partilha-belem-admin/
+        run: |
+          if curl --fail --silent --show-error --retry 3 --max-time 15 "$SITE_URL" -o index.html \
+            && grep -q '<app-root>' index.html; then
+            echo "UP: $SITE_URL respondeu e contém a aplicação Angular."
+          else
+            echo "::error::DOWN: $SITE_URL indisponível ou sem a aplicação esperada."
+            exit 1
+          fi
