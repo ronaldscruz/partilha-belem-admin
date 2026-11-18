@@ -3,7 +3,8 @@
     <strong>Partilha Belém Admin</strong>
     <nav aria-label="Navegação principal">
       <button type="button" (click)="navigate('home')" [attr.aria-current]="page() === 'home' ? 'page' : null">Menu</button>
-      <button type="button" (click)="navigate('entries')" [attr.aria-current]="page() === 'entries' ? 'page' : null">Cadastros</button>
+      <button type="button" (click)="navigate('campaigns')" [attr.aria-current]="page() === 'campaigns' ? 'page' : null">Campanhas</button>
+      <button type="button" (click)="navigate('stock')" [attr.aria-current]="page() === 'stock' ? 'page' : null">Estoque</button>
       <button type="button" (click)="navigate('coverage')" [attr.aria-current]="page() === 'coverage' ? 'page' : null">Cobertura</button>
     </nav>
   </div>
@@ -15,9 +16,14 @@
       <h1>Planejamento de doações</h1>
       <div class="grid">
         <section class="panel">
-          <h2>Cadastros</h2>
-          <p>Registre as campanhas e as quantidades disponíveis.</p>
-          <button class="action" type="button" (click)="navigate('entries')">Abrir cadastros</button>
+          <h2>Campanhas</h2>
+          <p>Cadastre uma campanha ou consulte os registros.</p>
+          <button class="action" type="button" (click)="navigate('campaigns')">Abrir campanhas</button>
+        </section>
+        <section class="panel">
+          <h2>Estoque</h2>
+          <p>Atualize as quantidades de alimentos e bebidas.</p>
+          <button class="action" type="button" (click)="navigate('stock')">Abrir estoque</button>
         </section>
         <section class="panel">
           <h2>Cobertura</h2>
@@ -26,12 +32,12 @@
         </section>
       </div>
     }
-    @case ('entries') {
-      <h1>Cadastros</h1>
+    @case ('campaigns') {
+      <h1>Campanhas</h1>
       <p class="message" [class.error]="error()" role="status">{{ message() }}</p>
       <div class="grid">
         <form class="panel" (ngSubmit)="saveCampaign()" #campaignForm="ngForm">
-          <h2>Campanha</h2>
+          <h2>Nova campanha</h2>
           <label for="campaign-date">Data</label>
           <input id="campaign-date" name="date" type="date" [(ngModel)]="campaignDate" required>
           <label for="campaign-minutes">Duração em minutos</label>
@@ -40,15 +46,36 @@
           <input id="campaign-people" name="people" type="number" min="1" step="1" [(ngModel)]="campaignPeople" required>
           <button class="action" type="submit" [disabled]="campaignForm.invalid">Salvar campanha</button>
         </form>
-        <form class="panel" (ngSubmit)="saveStock()" #stockForm="ngForm">
-          <h2>Estoque</h2>
-          @for (item of stockItems; track item.key) {
-            <label [attr.for]="item.key">{{ item.label }}</label>
-            <input [id]="item.key" [name]="item.key" type="number" min="0" step="1" [(ngModel)]="stockDraft[item.key]" required>
+        <section class="panel">
+          <h2>Campanhas cadastradas</h2>
+          @for (campaign of coverage(); track campaign.id) {
+            <div class="record">
+              <span>
+                <strong>{{ formatDate(campaign.date) }}</strong>
+                <br>
+                {{ campaign.minutes }} min · Meta: {{ campaign.people }}
+              </span>
+              <button class="secondary" type="button" (click)="undoCampaign(campaign)"
+                      [attr.aria-label]="'Desfazer cadastro da campanha de ' + formatDate(campaign.date)">
+                Desfazer cadastro
+              </button>
+            </div>
+          } @empty {
+            <p>Nenhuma campanha cadastrada.</p>
           }
-          <button class="action" type="submit" [disabled]="stockForm.invalid">Salvar estoque</button>
-        </form>
+        </section>
       </div>
+    }
+    @case ('stock') {
+      <h1>Estoque</h1>
+      <p class="message" [class.error]="error()" role="status">{{ message() }}</p>
+      <form class="panel stock-form" (ngSubmit)="saveStock()" #stockForm="ngForm">
+        @for (item of stockItems; track item.key) {
+          <label [attr.for]="item.key">{{ item.label }}</label>
+          <input [id]="item.key" [name]="item.key" type="number" min="0" step="1" [(ngModel)]="stockDraft[item.key]" required>
+        }
+        <button class="action" type="submit" [disabled]="stockForm.invalid">Salvar estoque</button>
+      </form>
     }
     @case ('coverage') {
       <h1>Cobertura das campanhas</h1>

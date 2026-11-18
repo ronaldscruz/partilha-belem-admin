@@ -26,6 +26,9 @@ p { margin: 0; line-height: 1.5; }
 .summary { background: #dcece0; margin-bottom: 16px; }
 .summary strong { font-size: 1.75rem; }
 .action { color: #fff; background: #254737; border: 0; padding: 10px 18px; border-radius: 6px; margin-top: 18px; }
+.secondary { background: #fff; color: #254737; border: 1px solid #789181; padding: 8px 12px; border-radius: 6px; }
+.record { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding-block: 12px; border-top: 1px solid #d7e2d9; }
+.stock-form { max-width: 460px; }
 label { display: block; margin: 12px 0 5px; }
 input { display: block; width: 100%; min-width: 0; min-height: 44px; padding: 8px 10px; border-radius: 6px; border: 1px solid #789181; }
 .message { margin-bottom: 12px; }

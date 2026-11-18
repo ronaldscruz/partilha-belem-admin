@@ -7,7 +7,7 @@ interface PlanningState {
   stock: Stock;
 }
 
-type Page = 'home' | 'entries' | 'coverage';
+type Page = 'home' | 'campaigns' | 'stock' | 'coverage';
 const storageKey = 'partilha-belem-admin.v1';
 const emptyStock: Stock = { meat: 0, cheese: 0, water: 0, drinks: 0 };
 
@@ -66,6 +66,17 @@ export class App {
       this.campaignDate = '';
       this.campaignMinutes = this.campaignPeople = null;
     }
+  }
+
+  undoCampaign(campaign: Campaign): void {
+    const date = this.formatDate(campaign.date);
+    if (!window.confirm(`Desfazer o cadastro da campanha de ${date}?`)) return;
+
+    const state = this.state();
+    this.persist({
+      ...state,
+      campaigns: state.campaigns.filter(({ id }) => id !== campaign.id),
+    }, 'Cadastro da campanha desfeito.');
   }
 
   saveStock(): void {
