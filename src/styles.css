@@ -6,9 +6,9 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; }
-button, input { font: inherit; }
+button, input, select { font: inherit; }
 button { min-height: 44px; cursor: pointer; }
-button:focus-visible, input:focus-visible { outline: 3px solid #567f38; outline-offset: 3px; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #567f38; outline-offset: 3px; }
 button:disabled { opacity: .65; cursor: default; }
 header { background: #254737; color: #fff; }
 .shell { width: min(100% - 32px, 940px); margin-inline: auto; }
@@ -27,15 +27,26 @@ p { margin: 0; line-height: 1.5; }
 .summary strong { font-size: 1.75rem; }
 .action { color: #fff; background: #254737; border: 0; padding: 10px 18px; border-radius: 6px; margin-top: 18px; }
 .secondary { background: #fff; color: #254737; border: 1px solid #789181; padding: 8px 12px; border-radius: 6px; }
-.record { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding-block: 12px; border-top: 1px solid #d7e2d9; }
-.stock-form { max-width: 460px; }
+.page-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; }
+.page-heading h1, .page-heading .action, .dialog-actions .action { margin: 0; }
+.table-panel { padding: 0; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; text-align: left; }
+th, td { padding: 12px 16px; vertical-align: middle; }
+thead { background: #eef3ef; }
+tbody tr { border-top: 1px solid #d7e2d9; }
+tbody th small { display: block; font-weight: 400; }
+.row-actions, .dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.dialog-actions { margin-top: 20px; justify-content: flex-end; }
+dialog { width: min(calc(100% - 32px), 440px); max-height: calc(100% - 32px); padding: 22px; border: 1px solid #d7e2d9; border-radius: 12px; color: inherit; }
+dialog::backdrop { background: #142a22a0; }
 label { display: block; margin: 12px 0 5px; }
-input { display: block; width: 100%; min-width: 0; min-height: 44px; padding: 8px 10px; border-radius: 6px; border: 1px solid #789181; }
+input, select { display: block; width: 100%; min-width: 0; min-height: 44px; padding: 8px 10px; border-radius: 6px; border: 1px solid #789181; }
 .message { margin-bottom: 12px; }
 .message:empty { margin: 0; }
+dialog .message { margin-top: 12px; }
 .error { color: #873b21; }
-.campaign { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; padding-block: 12px; border-top: 1px solid #d7e2d9; }
 @media (max-width: 600px) {
-  .grid, .campaign { grid-template-columns: 1fr; }
+  .grid { grid-template-columns: 1fr; }
   .masthead { align-items: flex-start; flex-direction: column; }
+  th, td { padding-inline: 10px; }
 }

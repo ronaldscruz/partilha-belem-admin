@@ -33,49 +33,98 @@
       </div>
     }
     @case ('campaigns') {
-      <h1>Campanhas</h1>
+      <div class="page-heading">
+        <h1>Campanhas</h1>
+        <button class="action" type="button" (click)="openCampaign(campaignDialog)">Nova campanha</button>
+      </div>
       <p class="message" [class.error]="error()" role="status">{{ message() }}</p>
-      <div class="grid">
-        <form class="panel" (ngSubmit)="saveCampaign()" #campaignForm="ngForm">
-          <h2>Nova campanha</h2>
+      <div class="panel table-panel">
+        <table aria-label="Campanhas cadastradas">
+          <thead><tr><th scope="col">Data</th><th scope="col">Meta</th><th scope="col">Ações</th></tr></thead>
+          <tbody>
+            @for (campaign of coverage(); track campaign.id) {
+              <tr>
+                <th scope="row">{{ formatDate(campaign.date) }}<small>{{ campaign.minutes }} min</small></th>
+                <td>{{ campaign.people }}</td>
+                <td><button class="secondary" type="button" (click)="undoCampaign(campaign)"
+                     [attr.aria-label]="'Desfazer cadastro da campanha de ' + formatDate(campaign.date)">Desfazer</button></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3">Nenhuma campanha cadastrada.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <dialog #campaignDialog aria-labelledby="campaign-title">
+        <form (ngSubmit)="saveCampaign(campaignDialog)" #campaignForm="ngForm">
+          <h2 id="campaign-title">Nova campanha</h2>
           <label for="campaign-date">Data</label>
-          <input id="campaign-date" name="date" type="date" [(ngModel)]="campaignDate" required>
+          <input id="campaign-date" name="date" type="date" [(ngModel)]="campaignDate" required autofocus>
           <label for="campaign-minutes">Duração em minutos</label>
           <input id="campaign-minutes" name="minutes" type="number" min="1" step="1" [(ngModel)]="campaignMinutes" required>
           <label for="campaign-people">Meta de pessoas</label>
           <input id="campaign-people" name="people" type="number" min="1" step="1" [(ngModel)]="campaignPeople" required>
-          <button class="action" type="submit" [disabled]="campaignForm.invalid">Salvar campanha</button>
+          @if (error() && message()) { <p class="message error" role="alert">{{ message() }}</p> }
+          <div class="dialog-actions">
+            <button class="secondary" type="button" (click)="campaignDialog.close()">Cancelar</button>
+            <button class="action" type="submit" [disabled]="campaignForm.invalid">Salvar campanha</button>
+          </div>
         </form>
-        <section class="panel">
-          <h2>Campanhas cadastradas</h2>
-          @for (campaign of coverage(); track campaign.id) {
-            <div class="record">
-              <span>
-                <strong>{{ formatDate(campaign.date) }}</strong>
-                <br>
-                {{ campaign.minutes }} min · Meta: {{ campaign.people }}
-              </span>
-              <button class="secondary" type="button" (click)="undoCampaign(campaign)"
-                      [attr.aria-label]="'Desfazer cadastro da campanha de ' + formatDate(campaign.date)">
-                Desfazer cadastro
-              </button>
-            </div>
-          } @empty {
-            <p>Nenhuma campanha cadastrada.</p>
-          }
-        </section>
-      </div>
+      </dialog>
     }
     @case ('stock') {
-      <h1>Estoque</h1>
+      <div class="page-heading">
+        <h1>Estoque</h1>
+        <button class="action" type="button" (click)="openStock(stockDialog)"
+                [disabled]="!availableStockItems().length">Adicionar item</button>
+      </div>
       <p class="message" [class.error]="error()" role="status">{{ message() }}</p>
-      <form class="panel stock-form" (ngSubmit)="saveStock()" #stockForm="ngForm">
-        @for (item of stockItems; track item.key) {
-          <label [attr.for]="item.key">{{ item.label }}</label>
-          <input [id]="item.key" [name]="item.key" type="number" min="0" step="1" [(ngModel)]="stockDraft[item.key]" required>
-        }
-        <button class="action" type="submit" [disabled]="stockForm.invalid">Salvar estoque</button>
-      </form>
+      <div class="panel table-panel">
+        <table aria-label="Itens em estoque">
+          <thead><tr><th scope="col">Item</th><th scope="col">Qtd.</th><th scope="col">Ações</th></tr></thead>
+          <tbody>
+            @for (item of stockItems; track item.key) {
+              @if (state().stock[item.key] > 0) {
+                <tr>
+                  <th scope="row">{{ item.label }}</th>
+                  <td>{{ state().stock[item.key] }}</td>
+                  <td>
+                    <div class="row-actions">
+                      <button class="secondary" type="button" [attr.aria-label]="'Ajustar ' + item.label"
+                              (click)="openStock(stockDialog, item.key)">Ajustar</button>
+                      <button class="secondary" type="button" [attr.aria-label]="'Remover ' + item.label"
+                              (click)="removeStockItem(item.key, item.label)">Remover</button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+            @if (availableStockItems().length === stockItems.length) {
+              <tr><td colspan="3">Nenhum item em estoque.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <dialog #stockDialog aria-labelledby="stock-title">
+        <form (ngSubmit)="saveStock(stockDialog)" #stockForm="ngForm">
+          <h2 id="stock-title">{{ editingStock ? 'Ajustar quantidade' : 'Adicionar item' }}</h2>
+          <label for="stock-item">Item</label>
+          <select id="stock-item" name="stock-item" [ngModel]="stockItemDraft"
+                  (ngModelChange)="selectStockItem($event)" [disabled]="editingStock" required>
+            @for (item of editingStock ? stockItems : availableStockItems(); track item.key) {
+              <option [ngValue]="item.key">{{ item.label }}</option>
+            }
+          </select>
+          <label for="stock-quantity">Quantidade</label>
+          <input id="stock-quantity" name="stock-quantity" type="number" min="1" step="1"
+                 [(ngModel)]="stockQuantityDraft" required autofocus>
+          @if (error() && message()) { <p class="message error" role="alert">{{ message() }}</p> }
+          <div class="dialog-actions">
+            <button class="secondary" type="button" (click)="stockDialog.close()">Cancelar</button>
+            <button class="action" type="submit" [disabled]="stockForm.invalid">Salvar item</button>
+          </div>
+        </form>
+      </dialog>
     }
     @case ('coverage') {
       <h1>Cobertura das campanhas</h1>
@@ -83,18 +132,22 @@
         <strong>{{ capacity() }} {{ capacity() === 1 ? 'kit completo' : 'kits completos' }}</strong>
         <p>Capacidade calculada com o estoque atual.</p>
       </section>
-      <section class="panel">
-        <h2>Campanhas por data</h2>
-        @for (campaign of coverage(); track campaign.id) {
-          <div class="campaign">
-            <span>{{ formatDate(campaign.date) }} · {{ campaign.minutes }} min</span>
-            <span>Meta: {{ campaign.people }} {{ campaign.people === 1 ? 'pessoa' : 'pessoas' }}</span>
-            <strong [class.error]="!campaign.covered">{{ campaign.covered ? 'Coberta' : 'Sem cobertura' }}</strong>
-          </div>
-        } @empty {
-          <p>Nenhuma campanha cadastrada.</p>
-        }
-      </section>
+      <div class="panel table-panel">
+        <table aria-label="Cobertura por campanha">
+          <thead><tr><th scope="col">Data</th><th scope="col">Meta</th><th scope="col">Situação</th></tr></thead>
+          <tbody>
+            @for (campaign of coverage(); track campaign.id) {
+              <tr>
+                <th scope="row">{{ formatDate(campaign.date) }}<small>{{ campaign.minutes }} min</small></th>
+                <td>{{ campaign.people }}</td>
+                <td><strong [class.error]="!campaign.covered">{{ campaign.covered ? 'Coberta' : 'Sem cobertura' }}</strong></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3">Nenhuma campanha cadastrada.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
     }
   }
 </main>

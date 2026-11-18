@@ -39,18 +39,30 @@ export class App {
     { key: 'water', label: 'Águas' },
     { key: 'drinks', label: 'Outras bebidas' },
   ] as const;
+  readonly availableStockItems = computed(() =>
+    this.stockItems.filter(({ key }) => this.state().stock[key] === 0),
+  );
 
   campaignDate = '';
   campaignMinutes: number | null = null;
   campaignPeople: number | null = null;
-  stockDraft: Record<keyof Stock, number | null> = { ...this.state().stock };
+  stockItemDraft: keyof Stock = 'meat';
+  stockQuantityDraft: number | null = null;
+  editingStock = false;
 
   navigate(page: Page): void {
     this.message.set('');
     this.page.set(page);
   }
 
-  saveCampaign(): void {
+  openCampaign(dialog: HTMLDialogElement): void {
+    this.message.set('');
+    this.campaignDate = '';
+    this.campaignMinutes = this.campaignPeople = null;
+    dialog.showModal();
+  }
+
+  saveCampaign(dialog: HTMLDialogElement): void {
     const { campaignDate: date, campaignMinutes: minutes, campaignPeople: people } = this;
     if (!date || minutes === null || people === null || !Number.isSafeInteger(minutes)
         || !Number.isSafeInteger(people) || minutes < 1 || people < 1) {
@@ -62,10 +74,7 @@ export class App {
       ...this.state(),
       campaigns: [...this.state().campaigns, campaign],
     }, 'Campanha registrada.');
-    if (saved) {
-      this.campaignDate = '';
-      this.campaignMinutes = this.campaignPeople = null;
-    }
+    if (saved) dialog.close();
   }
 
   undoCampaign(campaign: Campaign): void {
@@ -79,14 +88,36 @@ export class App {
     }, 'Cadastro da campanha desfeito.');
   }
 
-  saveStock(): void {
-    const { meat, cheese, water, drinks } = this.stockDraft;
-    if (meat === null || cheese === null || water === null || drinks === null
-        || [meat, cheese, water, drinks].some((value) => !Number.isSafeInteger(value) || value < 0)) {
-      this.notify('Informe quantidades inteiras a partir de zero.', true);
+  openStock(dialog: HTMLDialogElement, item?: keyof Stock): void {
+    this.message.set('');
+    this.editingStock = item !== undefined;
+    const [available] = this.availableStockItems();
+    this.selectStockItem(item ?? available?.key ?? 'meat');
+    dialog.showModal();
+  }
+
+  selectStockItem(item: keyof Stock): void {
+    this.stockItemDraft = item;
+    this.stockQuantityDraft = this.state().stock[item] || null;
+  }
+
+  saveStock(dialog: HTMLDialogElement): void {
+    const quantity = this.stockQuantityDraft;
+    if (quantity === null || !Number.isSafeInteger(quantity) || quantity < 1) {
+      this.notify('Informe uma quantidade inteira maior que zero.', true);
       return;
     }
-    this.persist({ ...this.state(), stock: { meat, cheese, water, drinks } }, 'Estoque atualizado.');
+    if (this.updateStock(this.stockItemDraft, quantity, 'Estoque atualizado.')) dialog.close();
+  }
+
+  removeStockItem(item: keyof Stock, label: string): void {
+    if (!window.confirm(`Remover ${label.toLowerCase()} do estoque?`)) return;
+    this.updateStock(item, 0, 'Item removido do estoque.');
+  }
+
+  private updateStock(item: keyof Stock, quantity: number, message: string): boolean {
+    const state = this.state();
+    return this.persist({ ...state, stock: { ...state.stock, [item]: quantity } }, message);
   }
 
   formatDate(value: string): string {
